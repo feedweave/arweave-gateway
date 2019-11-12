@@ -9,10 +9,16 @@
   "dependencies": {
     "arweave": "^1.5.3",
     "debug": "^4.1.1",
+    "dotenv": "^8.2.0",
     "lodash": "^4.17.15",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "node-pg-migrate": "^3.23.3",
+    "pg": "^7.12.1"
   },
   "devDependencies": {
     "eslint": "^6.6.0"
+  },
+  "scripts": {
+    "migrate": "node-pg-migrate"
   }
 }
