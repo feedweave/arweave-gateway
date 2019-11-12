@@ -37,7 +37,7 @@ exports.up = pgm => {
           unique: true,
       },
       timestamp: {
-          type: 'timestamp',
+          type: 'bigint',
           notNull: true,
       },
       rawData: {
