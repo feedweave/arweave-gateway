@@ -1,0 +1,18 @@
+{
+  "name": "ar-posts-by-tag",
+  "version": "0.0.1",
+  "description": "Get posts from Arweave by tag",
+  "main": "index.js",
+  "author": "Denis Nazarov",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "arweave": "^1.5.3",
+    "debug": "^4.1.1",
+    "lodash": "^4.17.15",
+    "node-fetch": "^2.6.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.6.0"
+  }
+}
