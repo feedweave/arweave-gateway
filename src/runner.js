@@ -11,7 +11,7 @@ import { getExistingBlocks, saveTransactionsAndBlocks } from "./data-db.js";
 // persist new blocks
 // loop
 
-const log = debug("ar-posts-by-tag:runner");
+const log = debug("ar-tag-explorer:runner");
 
 export async function runner() {
   const existingBlocks = await getExistingBlocks();

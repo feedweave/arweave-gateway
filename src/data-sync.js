@@ -8,7 +8,7 @@ import flatten from "lodash/flatten";
 import difference from "lodash/difference";
 import debug from "debug";
 
-const log = debug('ar-posts-by-tag:sync');
+const log = debug('ar-tag-explorer:sync');
 
 export async function syncIteration(existingBlocks, options) {
   const { height } = await getChainInfo();

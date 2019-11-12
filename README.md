@@ -1,4 +1,4 @@
-# ar-posts-by-tag
+# ar-tag-explorer
 
 Ingests Arweave transactions tagged with a certain tag.
 
