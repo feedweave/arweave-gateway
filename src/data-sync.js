@@ -1,6 +1,6 @@
 import {
   getTxIdsByTag,
-  getTxData,
+  getTxWithBlockHash,
   getBlockForTx,
   getChainInfo
 } from "./util.js";
@@ -18,7 +18,7 @@ export async function syncIteration(existingBlocks, options) {
   let idsToRetrieve = [];
 
   if (existingBlocks.length === 0 || height > existingBlocks[0].height) {
-    const existingTxIds = flatten(existingBlocks.map(block => block.txs));
+    const existingTxIds = flatten(existingBlocks.map(block => block.rawData.txs));
     log(`existingTxIds: ${existingTxIds}`)
     const remoteTxIds = await getTxIdsByTag([`App-Name`, options.appName]);
     log(`remoteTxIds: ${remoteTxIds}`)
@@ -29,8 +29,8 @@ export async function syncIteration(existingBlocks, options) {
     idsToRetrieve = newTxIds;
   }
 
-  const txDataPromises = idsToRetrieve.map(id => getTxData(id));
-  const transactions = await Promise.all(txDataPromises);
+  const txPromises = idsToRetrieve.map(id => getTxWithBlockHash(id));
+  const transactions = await Promise.all(txPromises);
   log(`fetched ${transactions.length} transactions`)
 
   // TODO this may fetch duplicate blocks

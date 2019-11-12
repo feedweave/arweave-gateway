@@ -9,6 +9,8 @@ const arweave = Arweave.init({
 
 const CHAIN_INFO_URL = `https://arweave.net/info`;
 
+//TODO memoize requests??
+
 const base64Decode = string => {
     // eslint-disable-next-line no-undef
     return Buffer.from(string, 'base64').toString('utf-8');
@@ -44,6 +46,15 @@ export async function getBlockForTx(txId) {
 export async function getTxById(txId) {
     const resp = await fetch(`https://arweave.net/tx/${txId}`).then(resp => resp.json())
     return resp
+}
+
+export async function getTxWithBlockHash(txId) {
+    const tx = await fetch(`https://arweave.net/tx/${txId}`).then(resp => resp.json())
+    const txStatus = await fetch(`https://arweave.net/tx/${txId}/status`).then(resp => resp.json())
+
+
+    tx.blockHash = txStatus.block_indep_hash
+    return tx
 }
 
 export async function getTxData(txId) {
