@@ -2,16 +2,18 @@ import dotenv from "dotenv";
 dotenv.config();
 import debug from "debug";
 
-import { syncIteration } from './data-sync.js'
+import { syncIteration } from "./data-sync.js";
 import { getExistingBlocks, saveTransactionsAndBlocks } from "./data-db.js";
 
-// connect to db
-// load existingBlocks
-// run syncIteration(existingBlocks, options)
-// persist new blocks
-// loop
-
 const log = debug("ar-tag-explorer:runner");
+
+let isShuttingDown = false;
+
+const randomDelayBetween = (minSeconds, maxSeconds) => {
+  const randomDelay = Math.random() * (maxSeconds - minSeconds);
+  const ms = (minSeconds + randomDelay) * 1000;
+  return new Promise(res => setTimeout(res, ms));
+};
 
 export async function runner() {
   const existingBlocks = await getExistingBlocks();
@@ -21,16 +23,21 @@ export async function runner() {
     appName: `scribe-alpha-00`
   };
 
-  const syncResult = await syncIteration(existingBlocks, options);
-  log(`syncedTransactions: ${syncResult.transactions}`);
-  log(`syncedBlocks: ${syncResult.blocks}`);
+  while (!isShuttingDown) {
+    const syncResult = await syncIteration(existingBlocks, options);
+    log(`syncedTransactions: ${syncResult.transactions}`);
+    log(`syncedBlocks: ${syncResult.blocks}`);
 
-  const savedResults = await saveTransactionsAndBlocks(syncResult.transactions, syncResult.blocks)
-  log(`savedTransactions: ${savedResults.transactions}`);
-  log(`savedBlocks: ${savedResults.blocks}`);
-  // TODO push saved blocks into `existingBlocks`
-  // TODO set up a loop
-  // -- delay at the end of while loop
+    const savedResults = await saveTransactionsAndBlocks(
+      syncResult.transactions,
+      syncResult.blocks
+    );
+    log(`savedTransactions: ${savedResults.transactions}`);
+    log(`savedBlocks: ${savedResults.blocks}`);
+
+    existingBlocks.push(...savedResults.blocks);
+    await randomDelayBetween(10, 20);
+  }
 }
 
 runner();
