@@ -25,58 +25,65 @@ exports.shorthands = undefined;
 
 exports.up = pgm => {
   pgm.createTable("blocks", {
-      hash: {
-          type: 'varchar(64)',
-          notNull: true,
-          primaryKey: true,
-          unique: true,
-      },
-      height: {
-          type: 'integer',
-          notNull: true,
-          unique: true,
-      },
-      timestamp: {
-          type: 'bigint',
-          notNull: true,
-      },
-      rawData: {
-          type: 'jsonb',
-          notNull: true,
-
-      }
+    hash: {
+      type: "varchar(64)",
+      notNull: true,
+      primaryKey: true,
+      unique: true
+    },
+    height: {
+      type: "integer",
+      notNull: true,
+      unique: true
+    },
+    timestamp: {
+      type: "bigint",
+      notNull: true
+    },
+    rawData: {
+      type: "jsonb",
+      notNull: true
+    }
   });
-  pgm.createIndex('blocks', 'height');
+  pgm.createIndex("blocks", "height");
 
   pgm.createTable("transactions", {
-      id: {
-          type: 'varchar(43)',
-          notNull: true,
-          primaryKey: true,
-          unique: true,
-      },
-      blockHash: {
-          type: 'varchar(64)',
-          notNull: true,
-          references: 'blocks',
-          onDelete: 'cascade',
-          unique: true,
-
-      },
-      rawData: {
-          type: 'jsonb',
-          notNull: true,
-      },
-      owner: {
-          type: 'varchar(689)',
-          notNull: true,
-      }
+    id: {
+      type: "varchar(43)",
+      notNull: true,
+      primaryKey: true,
+      unique: true
+    },
+    blockHash: {
+      type: "varchar(64)",
+      notNull: true,
+      references: "blocks",
+      onDelete: "cascade",
+      unique: true
+    },
+    rawData: {
+      type: "jsonb",
+      notNull: true
+    },
+    owner: {
+      type: "varchar(689)",
+      notNull: true
+    },
+    tags: {
+      type: "jsonb",
+      notNull: true
+    },
+    appName: {
+      type: "varchar(64)",
+      notNull: true
+    }
   });
-  pgm.createIndex('transactions', 'blockHash');
-  pgm.createIndex('transactions', 'owner');
+  pgm.createIndex("transactions", "blockHash");
+  pgm.createIndex("transactions", "owner");
+  pgm.createIndex("transactions", "appName");
 };
 
 exports.down = pgm => {
-    pgm.dropTable("transactions")
-    pgm.dropTable("blocks")
+  pgm.dropTable("transactions");
+  pgm.dropTable("blocks");
 };

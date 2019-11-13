@@ -1,4 +1,5 @@
 import pg from "pg";
+import { decodeTags } from "./util.js"
 const { Pool } = pg;
 
 const pool = new Pool();
@@ -10,9 +11,13 @@ export async function getExistingBlocks() {
 
 async function saveTransaction(transaction) {
   const { id, blockHash, owner } = transaction;
+  const tags = decodeTags(transaction.tags)
+  const appNameTag = tags.find(tag => tag.name === `App-Name`)
+  const appName = appNameTag && appNameTag.value
+  const tagsAsJson = JSON.stringify(tags)
   const query = {
-    text: `INSERT INTO transactions("id", "blockHash", "rawData", "owner") VALUES($1, $2, $3, $4)`,
-    values: [id, blockHash, transaction, owner]
+    text: `INSERT INTO transactions("id", "blockHash", "rawData", "owner", "tags", "appName") VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
+    values: [id, blockHash, transaction, owner, tagsAsJson, appName]
   };
 
   const result = await pool.query(query);
@@ -22,7 +27,7 @@ async function saveTransaction(transaction) {
 async function saveBlock(block) {
   const { indep_hash, height, timestamp } = block;
   const query = {
-    text: `INSERT INTO blocks("hash", "height", "timestamp", "rawData") VALUES($1, $2, $3, $4)`,
+    text: `INSERT INTO blocks("hash", "height", "timestamp", "rawData") VALUES($1, $2, $3, $4) RETURNING *`,
     values: [indep_hash, height, timestamp, block]
   };
 
