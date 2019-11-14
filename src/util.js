@@ -9,6 +9,11 @@ const arweave = Arweave.init({
 
 const CHAIN_INFO_URL = `https://arweave.net/info`;
 
+export async function ownerToAddress(owner) {
+  const address = await arweave.wallets.ownerToAddress(owner);
+  return address;
+}
+
 //TODO memoize requests??
 
 const base64Decode = string => {
@@ -31,9 +36,9 @@ export async function getChainInfo() {
 }
 
 export async function getBlockAtHeight(height) {
-  const block = await fetch(`https://arweave.net/block/height/${height}`).then(
-    x => x.json()
-  );
+  const block = await fetch(
+    `https://arweave.net/block/height/${height}`
+  ).then(x => x.json());
   return block;
 }
 
@@ -70,9 +75,9 @@ export async function getTxWithBlockHash(txId) {
   const tx = await fetch(`https://arweave.net/tx/${txId}`).then(resp =>
     resp.json()
   );
-  const txStatus = await fetch(`https://arweave.net/tx/${txId}/status`).then(
-    resp => resp.json()
-  );
+  const txStatus = await fetch(
+    `https://arweave.net/tx/${txId}/status`
+  ).then(resp => resp.json());
 
   tx.blockHash = txStatus.block_indep_hash;
   return tx;

@@ -1,5 +1,5 @@
 import pg from "pg";
-import { decodeTags } from "./util.js"
+import { decodeTags, ownerToAddress } from "./util.js"
 const { Pool } = pg;
 
 const pool = new Pool();
@@ -9,15 +9,42 @@ export async function getExistingBlocks() {
   return result.rows;
 }
 
+const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags"`
+
+export async function getTransactionsByAppName(appName) {
+  const result = await pool.query({
+    text: `SELECT ${transactionColumns} FROM transactions WHERE "appName" = $1`,
+    values: [appName]
+  });
+  return result.rows;
+}
+
+export async function getTransactionsByWallet(wallet) {
+  const result = await pool.query({
+    text: `SELECT ${transactionColumns} FROM transactions WHERE "ownerAddress" = $1`,
+    values: [wallet]
+  });
+  return result.rows;
+}
+
+export async function getTransactionsByWalletAndApp(wallet, appName) {
+  const result = await pool.query({
+    text: `SELECT ${transactionColumns} FROM transactions WHERE "ownerAddress" = $1 AND "appName" = $2`,
+    values: [wallet, appName]
+  });
+  return result.rows;
+}
+
 async function saveTransaction(transaction) {
   const { id, blockHash, owner } = transaction;
   const tags = decodeTags(transaction.tags)
   const appNameTag = tags.find(tag => tag.name === `App-Name`)
   const appName = appNameTag && appNameTag.value
   const tagsAsJson = JSON.stringify(tags)
+  const ownerAddress = await ownerToAddress(owner)
   const query = {
-    text: `INSERT INTO transactions("id", "blockHash", "rawData", "owner", "tags", "appName") VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
-    values: [id, blockHash, transaction, owner, tagsAsJson, appName]
+    text: `INSERT INTO transactions("id", "blockHash", "rawData", "ownerAddress", "tags", "appName") VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
+    values: [id, blockHash, transaction, ownerAddress, tagsAsJson, appName]
   };
 
   const result = await pool.query(query);

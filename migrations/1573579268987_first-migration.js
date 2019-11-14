@@ -65,8 +65,8 @@ exports.up = pgm => {
       type: "jsonb",
       notNull: true
     },
-    owner: {
-      type: "varchar(689)",
+    ownerAddress: {
+      type: "varchar(43)",
       notNull: true
     },
     tags: {
@@ -79,7 +79,7 @@ exports.up = pgm => {
     }
   });
   pgm.createIndex("transactions", "blockHash");
-  pgm.createIndex("transactions", "owner");
+  pgm.createIndex("transactions", "ownerAddress");
   pgm.createIndex("transactions", "appName");
 };
 

@@ -10,6 +10,7 @@
     "arweave": "^1.5.3",
     "debug": "^4.1.1",
     "dotenv": "^8.2.0",
+    "express": "^4.17.1",
     "lodash": "^4.17.15",
     "node-fetch": "^2.6.0",
     "node-pg-migrate": "^3.23.3",
