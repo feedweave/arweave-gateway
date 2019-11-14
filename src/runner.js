@@ -15,13 +15,9 @@ const randomDelayBetween = (minSeconds, maxSeconds) => {
   return new Promise(res => setTimeout(res, ms));
 };
 
-export async function runner() {
+export async function runner(options) {
   const existingBlocks = await getExistingBlocks();
   log(`existingBlocks: ${existingBlocks.map(block => block.hash)}`);
-
-  const options = {
-    appName: `scribe-alpha-00`
-  };
 
   while (!isShuttingDown) {
     const syncResult = await syncIteration(existingBlocks, options);
@@ -40,4 +36,10 @@ export async function runner() {
   }
 }
 
-runner();
+// TODO allow configuring with multiple appNames
+
+const options = {
+  appName: `scribe-alpha-00`
+};
+
+runner(options);

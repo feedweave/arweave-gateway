@@ -10,6 +10,9 @@ import debug from "debug";
 
 const log = debug('ar-tag-explorer:sync');
 
+// TODO
+// pass in `highestExistingBlock` and `existingTxIds` into `syncIteration`
+
 export async function syncIteration(existingBlocks, options) {
   const { height } = await getChainInfo();
   log(`executing syncIteration`)
