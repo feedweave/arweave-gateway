@@ -39,7 +39,7 @@ export async function runner(options) {
 // TODO allow configuring with multiple appNames
 
 const options = {
-  appName: `scribe-alpha-00`
+  appName: `arweave-blog-0.0.1`
 };
 
 runner(options);

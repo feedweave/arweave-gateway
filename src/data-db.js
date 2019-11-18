@@ -1,5 +1,5 @@
 import pg from "pg";
-import { decodeTags, ownerToAddress } from "./util.js"
+import { decodeTags, ownerToAddress, base64Decode } from "./util.js"
 const { Pool } = pg;
 
 const pool = new Pool();
@@ -9,14 +9,24 @@ export async function getExistingBlocks() {
   return result.rows;
 }
 
-const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags"`
+const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", "rawData"->'data' as content`
+
+
+function processTransactionRows(rows) {
+  return rows.map(row => {
+    if (row.content) {
+      row.content = base64Decode(row.content)
+    }
+    return row
+  })
+}
 
 export async function getTransactionsByAppName(appName) {
   const result = await pool.query({
     text: `SELECT ${transactionColumns} FROM transactions WHERE "appName" = $1`,
     values: [appName]
   });
-  return result.rows;
+  return processTransactionRows(result.rows);
 }
 
 export async function getTransactionsByWallet(wallet) {
@@ -33,6 +43,22 @@ export async function getTransactionsByWalletAndApp(wallet, appName) {
     values: [wallet, appName]
   });
   return result.rows;
+}
+
+export async function getTransactionContent(transactionId) {
+  const result = await pool.query({
+    text: `SELECT "rawData"->'data' as content FROM transactions WHERE "id" = $1`,
+    values: [transactionId]
+  });
+
+  const row = result.rows[0]
+
+  if (row) {
+    return base64Decode(row.content)
+  } else {
+    return undefined
+  }
+  
 }
 
 async function saveTransaction(transaction) {
