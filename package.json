@@ -5,7 +5,6 @@
   "main": "index.js",
   "author": "Denis Nazarov",
   "license": "MIT",
-  "type": "module",
   "dependencies": {
     "arweave": "^1.5.3",
     "debug": "^4.1.1",
