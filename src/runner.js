@@ -26,30 +26,25 @@ export async function runner(options) {
       log(`syncedTransactions: ${syncResult.transactions}`);
       log(`syncedBlocks: ${syncResult.blocks}`);
 
-      try {
-        const {
-          transactions: savedTransactions,
-          blocks: savedBlocks
-        } = await saveTransactionsAndBlocks(
-          syncResult.transactions,
-          syncResult.blocks
-        );
+      const {
+        transactions: savedTransactions,
+        blocks: savedBlocks
+      } = await saveTransactionsAndBlocks(
+        syncResult.transactions,
+        syncResult.blocks
+      );
 
-        log(`savedTransactions: ${savedTransactions}`);
-        log(`savedBlocks: ${savedBlocks}`);
+      log(`savedTransactions: ${savedTransactions}`);
+      log(`savedBlocks: ${savedBlocks}`);
 
-        if (savedTransactions.length > 0) {
-          log(`calling deploy webhook`);
-          await callDeployWebhook();
-        }
-
-        existingBlocks.push(...savedBlocks);
-      } catch (error) {
-        log(`error saving transactions and blocks: ${error}`);
-        throw error;
+      if (savedTransactions.length > 0) {
+        log(`calling deploy webhook`);
+        await callDeployWebhook();
       }
+
+      existingBlocks.push(...savedBlocks);
     } catch (error) {
-      log(`error running syncIteration: ${error}`);
+      log(`runner error: ${error}`);
     }
 
     await randomDelayBetween(10, 20);
