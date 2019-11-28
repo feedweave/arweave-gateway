@@ -74,12 +74,17 @@ async function getTransaction(id) {
   return result.rows[0];
 }
 
-async function saveTransaction(transaction) {
+export async function saveTransaction(transaction) {
   const { id, blockHash, owner } = transaction;
 
   const existingTransaction = await getTransaction(id);
   if (existingTransaction) {
-    return existingTransaction;
+    const updateQuery = {
+      text: `UPDATE transactions SET "blockHash"=($1) WHERE id=($2) RETURNING *`,
+      values: [blockHash, id]
+    };
+    const updateResult = await pool.query(updateQuery);
+    return updateResult.rows[0];
   }
 
   const tags = decodeTags(transaction.tags);

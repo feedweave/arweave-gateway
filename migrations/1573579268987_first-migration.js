@@ -56,7 +56,6 @@ exports.up = pgm => {
     },
     blockHash: {
       type: "varchar(64)",
-      notNull: true,
       references: "blocks",
       onDelete: "cascade"
     },

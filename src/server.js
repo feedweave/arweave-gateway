@@ -6,27 +6,52 @@ import request from "request";
 import express from "express";
 const server = express();
 
-
 import {
   getTransactionsByAppName,
   getTransactionsByWallet,
   getTransactionsByWalletAndApp,
-  getTransactionContent
+  getTransactionContent,
+  saveTransaction
 } from "./data-db.js";
+
+import { callDeployWebhook } from "./util.js";
 
 // TODO block-explorer-api
 // `/user/:address/app-name/:app-name/following`
 // `/user/:address/app-name/:app-name/followers`
 
-server.use(express.json())
+server.use(express.json());
 
 // Pipe requests intended for Arweave gateway
 
 const apiUrl = "https://arweave.net";
+
+server.post("/tx", async function(req, res) {
+  const tx = req.body;
+  const postRes = await fetch(`${apiUrl}/tx`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(tx)
+  });
+
+  if (postRes.ok) {
+    try {
+      await saveTransaction(tx);
+      await callDeployWebhook();
+      res.sendStatus(201);
+    } catch (error) {
+      res.sendStatus(500);
+    }
+  }
+});
+
 server.use(["/tx", "/tx_anchor", "/price", "/wallet"], function(req, res) {
   var url = apiUrl + req.originalUrl;
-  req.pipe(request({ qs:req.query, uri: url, json: true })).pipe(res);
-})
+  req.pipe(request({ qs: req.query, uri: url, json: true })).pipe(res);
+});
 
 server.get("/transactions/app-name/:appName", async (req, res) => {
   const appName = req.params.appName;
