@@ -58,8 +58,7 @@ exports.up = pgm => {
       type: "varchar(64)",
       notNull: true,
       references: "blocks",
-      onDelete: "cascade",
-      unique: true
+      onDelete: "cascade"
     },
     rawData: {
       type: "jsonb",

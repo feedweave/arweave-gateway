@@ -1,5 +1,24 @@
 import Arweave from "arweave/node";
-import fetch from "node-fetch";
+import fetchNode from "node-fetch";
+import fetchRetry from "fetch-retry";
+
+async function fetch(url) {
+  return fetchRetry(url, {
+    retries: 5,
+    retryDelay: function(attempt) {
+      return Math.pow(2, attempt) * 1000; // 1000, 2000, 4000
+    },
+    retryOn: function(attempt, error, response) {
+      // retry on any network error, or 4xx or 5xx status codes
+      if (error !== null || response.status >= 400) {
+        console.log(`fetch failed: ${url}`);
+        console.log(error, response.status);
+        console.log(`retrying, attempt number ${attempt}`);
+        return true;
+      }
+    }
+  });
+}
 
 const arweave = Arweave.init({
   host: "arweave.net",
@@ -100,5 +119,5 @@ export async function getTxIdsByTag(tag) {
 
 export async function callDeployWebhook() {
   // eslint-disable-next-line no-undef
-  await fetch(process.env.DEPLOY_WEBHOOK_URL, { method: `POST` });
+  await fetchNode(process.env.DEPLOY_WEBHOOK_URL, { method: `POST` });
 }
