@@ -4,6 +4,7 @@ import debug from "debug";
 
 import { syncIteration } from "./data-sync.js";
 import { getExistingBlocks, saveTransactionsAndBlocks } from "./data-db.js";
+import { callDeployWebhook } from "./util.js";
 
 const log = debug("ar-tag-explorer:runner");
 
@@ -20,18 +21,37 @@ export async function runner(options) {
   log(`existingBlocks: ${existingBlocks.map(block => block.hash)}`);
 
   while (!isShuttingDown) {
-    const syncResult = await syncIteration(existingBlocks, options);
-    log(`syncedTransactions: ${syncResult.transactions}`);
-    log(`syncedBlocks: ${syncResult.blocks}`);
+    try {
+      const syncResult = await syncIteration(existingBlocks, options);
+      log(`syncedTransactions: ${syncResult.transactions}`);
+      log(`syncedBlocks: ${syncResult.blocks}`);
 
-    const savedResults = await saveTransactionsAndBlocks(
-      syncResult.transactions,
-      syncResult.blocks
-    );
-    log(`savedTransactions: ${savedResults.transactions}`);
-    log(`savedBlocks: ${savedResults.blocks}`);
+      try {
+        const {
+          transactions: savedTransactions,
+          blocks: savedBlocks
+        } = await saveTransactionsAndBlocks(
+          syncResult.transactions,
+          syncResult.blocks
+        );
 
-    existingBlocks.push(...savedResults.blocks);
+        log(`savedTransactions: ${savedTransactions}`);
+        log(`savedBlocks: ${savedBlocks}`);
+
+        if (savedTransactions.length > 0) {
+          log(`calling deploy webhook`);
+          await callDeployWebhook();
+        }
+
+        existingBlocks.push(...savedBlocks);
+      } catch (error) {
+        log(`error saving transactions and blocks: ${error}`);
+        throw error;
+      }
+    } catch (error) {
+      log(`error running syncIteration: ${error}`);
+    }
+
     await randomDelayBetween(10, 20);
   }
 }

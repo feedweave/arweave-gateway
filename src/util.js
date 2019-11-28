@@ -97,3 +97,9 @@ export async function getTxIdsByTag(tag) {
 
   return txIds;
 }
+
+const DEPLOY_WEBHOOK_URL = `https://api.netlify.com/build_hooks/5ddf00e3eb79c58835e18502`;
+
+export async function callDeployWebhook() {
+  await fetch(DEPLOY_WEBHOOK_URL, { method: `POST` });
+}
