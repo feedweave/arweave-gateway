@@ -54,7 +54,7 @@ export async function runner(options) {
 // TODO allow configuring with multiple appNames
 
 const options = {
-  appName: `arweave-blog-0.0.1`
+  appNames: [`arweave-blog-0.0.1`, `ArBoard`]
 };
 
 runner(options);

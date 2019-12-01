@@ -18,12 +18,17 @@
     "request": "^2.88.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.7.4",
+    "@babel/preset-env": "^7.7.4",
+    "babel-jest": "^24.9.0",
     "eslint": "^6.6.0",
-    "esm": "^3.2.25"
+    "esm": "^3.2.25",
+    "jest": "^24.9.0"
   },
   "scripts": {
     "migrate": "node-pg-migrate",
     "server": "node --require=esm src/server.js",
-    "runner": "node --require=esm src/runner.js"
+    "runner": "node --require=esm src/runner.js",
+    "test": "jest --watch"
   }
 }

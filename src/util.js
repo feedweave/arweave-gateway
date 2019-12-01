@@ -107,14 +107,31 @@ export async function getTxData(txId) {
   return base64Decode(tx.data);
 }
 
-export async function getTxIdsByTag(tag) {
-  const txIds = await arweave.arql({
-    op: "equals",
-    expr1: tag[0],
-    expr2: tag[1]
-  });
-
+export async function getTxIdsByAppNames(appNames) {
+  const arqlQuery = generateArqlQueryForAppNames(appNames);
+  const txIds = await arweave.arql(arqlQuery);
   return txIds;
+}
+
+function arqlAppNameEqualsQuery(appName) {
+  return {
+    op: "equals",
+    expr1: "App-Name",
+    expr2: appName
+  };
+}
+
+export function generateArqlQueryForAppNames(appNames) {
+  if (appNames.length === 1) {
+    return arqlAppNameEqualsQuery(appNames[0]);
+  } else {
+    const query = {
+      op: "or"
+    };
+    query.expr1 = arqlAppNameEqualsQuery(appNames.pop());
+    query.expr2 = generateArqlQueryForAppNames(appNames);
+    return query;
+  }
 }
 
 export async function callDeployWebhook() {
