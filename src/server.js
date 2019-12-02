@@ -11,6 +11,7 @@ import {
   getTransactionsByWallet,
   getTransactionsByWalletAndApp,
   getTransactionContent,
+  getAppNames,
   saveTransaction
 } from "./data-db.js";
 
@@ -51,6 +52,11 @@ server.post("/tx", async function(req, res) {
 server.use(["/tx", "/tx_anchor", "/price", "/wallet"], function(req, res) {
   var url = apiUrl + req.originalUrl;
   req.pipe(request({ qs: req.query, uri: url, json: true })).pipe(res);
+});
+
+server.get("/app-names", async (req, res) => {
+  const appNames = await getAppNames();
+  res.json(appNames);
 });
 
 server.get("/transactions/app-name/:appName", async (req, res) => {

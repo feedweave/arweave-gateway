@@ -63,17 +63,9 @@ export async function runner(options) {
   }
 }
 
-// TODO allow configuring with multiple appNames
-
 const options = {
-  appNames: [
-    `arweave-blog-0.0.1`,
-    `ArBoard`,
-    `arweave-id`,
-    `Academic`,
-    `scribe-alpha-00`,
-    `permamail`
-  ]
+  // eslint-disable-next-line no-undef
+  appNames: process.env.APP_NAMES.split(",")
 };
 
 runner(options);

@@ -66,6 +66,14 @@ export async function getTransactionContent(transactionId) {
   }
 }
 
+export async function getAppNames() {
+  const result = await pool.query(
+    `SELECT "appName" FROM transactions GROUP BY "appName"`
+  );
+
+  return result.rows.map(({ appName }) => appName);
+}
+
 async function getBlock(hash) {
   const result = await pool.query({
     text: `SELECT * FROM blocks WHERE hash = $1`,
