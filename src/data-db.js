@@ -12,9 +12,17 @@ function processTransactionRows(rows) {
     return row;
   });
 }
-export async function getExistingBlocks() {
-  const result = await pool.query("SELECT * FROM blocks ORDER BY height DESC");
-  return result.rows;
+export async function getExistingBlockHeight() {
+  const result = await pool.query(
+    "SELECT height FROM blocks ORDER BY height DESC LIMIT 1;"
+  );
+  const row = result.rows[0];
+  return row && row.height;
+}
+
+export async function getExistingTxIds() {
+  const result = await pool.query("SELECT id FROM transactions");
+  return result.rows.map(({ id }) => id);
 }
 
 const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", "rawData"->'data' as content`;
@@ -119,16 +127,31 @@ async function saveBlock(block) {
 }
 
 export async function saveTransactionsAndBlocks(transactions, blocks) {
-  const blockPromises = blocks.map(block => saveBlock(block));
-  const savedBlocks = await Promise.all(blockPromises);
+  const blockPromises = blocks.map(block => saveBlock(block).catch(err => err));
+  const allBlockPromises = await Promise.all(blockPromises);
+  const savedBlocks = allBlockPromises.filter(
+    result => !(result instanceof Error)
+  );
 
   const transactionPromises = transactions.map(transaction =>
-    saveTransaction(transaction)
+    saveTransaction(transaction).catch(err => err)
   );
-  const savedTransactions = await Promise.all(transactionPromises);
+  const allTransactionPromises = await Promise.all(transactionPromises);
+  const savedTransactions = allTransactionPromises.filter(
+    result => !(result instanceof Error)
+  );
 
   return {
     transactions: savedTransactions,
     blocks: savedBlocks
   };
+}
+
+export async function saveFetchError(url, error) {
+  const query = {
+    text: `INSERT INTO errors("url", "error") VALUES($1, $2) RETURNING *`,
+    values: [url, error]
+  };
+  const result = await pool.query(query);
+  return result.rows;
 }

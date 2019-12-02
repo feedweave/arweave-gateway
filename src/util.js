@@ -1,22 +1,14 @@
 import Arweave from "arweave/node";
 import fetchNode from "node-fetch";
-import fetchRetry from "fetch-retry";
+import fetchRetry from "./util/fetch-retry";
+
+import { saveFetchError } from "./data-db";
 
 async function fetch(url) {
-  return fetchRetry(url, {
-    retries: 5,
-    retryDelay: function(attempt) {
-      return Math.pow(2, attempt) * 1000; // 1000, 2000, 4000
-    },
-    retryOn: function(attempt, error, response) {
-      // retry on any network error, or 4xx or 5xx status codes
-      if (error !== null || response.status >= 400) {
-        console.log(`fetch failed: ${url}`);
-        console.log(error, response.status);
-        console.log(`retrying, attempt number ${attempt}`);
-        return true;
-      }
-    }
+  return fetchRetry(url).catch(async error => {
+    console.log("in catch block of fetchRetry", error);
+    await saveFetchError(url, error);
+    throw error;
   });
 }
 

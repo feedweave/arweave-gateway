@@ -3,7 +3,11 @@ dotenv.config();
 import debug from "debug";
 
 import { syncIteration } from "./data-sync.js";
-import { getExistingBlocks, saveTransactionsAndBlocks } from "./data-db.js";
+import {
+  getExistingBlockHeight,
+  saveTransactionsAndBlocks,
+  getExistingTxIds
+} from "./data-db.js";
 import { callDeployWebhook } from "./util.js";
 
 const log = debug("ar-tag-explorer:runner");
@@ -17,12 +21,17 @@ const randomDelayBetween = (minSeconds, maxSeconds) => {
 };
 
 export async function runner(options) {
-  const existingBlocks = await getExistingBlocks();
-  log(`existingBlocks: ${existingBlocks.map(block => block.hash)}`);
+  let existingBlockHeight = await getExistingBlockHeight();
+  log(`existingBlockHeight: ${existingBlockHeight}`);
+  const existingTxIds = await getExistingTxIds();
 
   while (!isShuttingDown) {
     try {
-      const syncResult = await syncIteration(existingBlocks, options);
+      const syncResult = await syncIteration(
+        existingBlockHeight,
+        existingTxIds,
+        options
+      );
       log(`syncedTransactions: ${syncResult.transactions}`);
       log(`syncedBlocks: ${syncResult.blocks}`);
 
@@ -42,7 +51,10 @@ export async function runner(options) {
         await callDeployWebhook();
       }
 
-      existingBlocks.push(...savedBlocks);
+      const newBlockHeight = savedBlocks.sort((a, b) => b.height - a.height);
+      existingBlockHeight = newBlockHeight;
+
+      existingTxIds.push(...savedTransactions.map(({ id }) => id));
     } catch (error) {
       log(`runner error: ${error}`);
     }
@@ -54,7 +66,14 @@ export async function runner(options) {
 // TODO allow configuring with multiple appNames
 
 const options = {
-  appNames: [`arweave-blog-0.0.1`, `ArBoard`]
+  appNames: [
+    `arweave-blog-0.0.1`,
+    `ArBoard`,
+    `arweave-id`,
+    `Academic`,
+    `scribe-alpha-00`,
+    `permamail`
+  ]
 };
 
 runner(options);
