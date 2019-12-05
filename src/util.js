@@ -4,6 +4,8 @@ import fetchRetry from "./util/fetch-retry";
 
 import { saveFetchError } from "./data-db";
 
+const { DEPLOY_WEBHOOK_URLS } = process.env;
+
 async function fetch(url) {
   return fetchRetry(url).catch(async error => {
     console.log("in catch block of fetchRetry", error);
@@ -127,6 +129,8 @@ export function generateArqlQueryForAppNames(appNames) {
 }
 
 export async function callDeployWebhook() {
-  // eslint-disable-next-line no-undef
-  await fetchNode(process.env.DEPLOY_WEBHOOK_URL, { method: `POST` });
+  const fetchPromises = DEPLOY_WEBHOOK_URLS.split(",").map(url =>
+    fetchNode(url, { method: `POST` })
+  );
+  return await Promise.all(fetchPromises);
 }
