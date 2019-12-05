@@ -25,7 +25,7 @@ export async function getExistingTxIds() {
   return result.rows.map(({ id }) => id);
 }
 
-const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", "rawData"->'data' as content`;
+const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", "rawData"->'data' as content, "rawData"->'reward' as fee`;
 
 export async function getTransactionsByAppName(appName) {
   const result = await pool.query({
