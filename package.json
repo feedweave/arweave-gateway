@@ -26,8 +26,8 @@
   },
   "scripts": {
     "migrate": "node-pg-migrate",
-    "server": "node --require=esm src/server.js",
-    "runner": "node --require=esm src/runner.js",
+    "server": "node -r esm -r dotenv/config src/server.js",
+    "runner": "node -r esm -r dotenv/config src/runner.js",
     "test": "jest --watch"
   }
 }
