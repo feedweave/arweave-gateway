@@ -11,7 +11,7 @@ import {
   getTransactionsByAppName,
   getTransactionsByWallet,
   getTransactionsByWalletAndApp,
-  getTransactionContent,
+  getTransactionWithContent,
   getAppNames,
   saveTransaction
 } from "./data-db.js";
@@ -60,21 +60,30 @@ server.get("/app-names", async (req, res) => {
   res.json(appNames);
 });
 
-server.get("/transactions/app-name/:appName", async (req, res) => {
-  const appName = req.params.appName;
-  const transactions = await getTransactionsByAppName(appName);
+server.get("/transactions", async (req, res) => {
+  const appName = req.query["app-name"];
+  const page = req.query.page;
+
+  const transactions = await getTransactionsByAppName(appName, page);
   res.json(transactions);
 });
 
-server.get("/transaction/:transactionId/content", async (req, res) => {
-  const transactionId = req.params.transactionId;
-  const content = await getTransactionContent(transactionId);
-  res.send(content);
+server.get("/transaction/:transactionId", async (req, res) => {
+  const { transactionId } = req.params;
+  const transaction = await getTransactionWithContent(transactionId);
+  res.send(transaction);
 });
 
 server.get("/user/:address/transactions", async (req, res) => {
   const address = req.params.address;
-  const transactions = await getTransactionsByWallet(address);
+
+  const appName = req.query["app-name"];
+  const page = req.query.page;
+
+  const transactions = await getTransactionsByWallet(address, {
+    appName,
+    page
+  });
   res.json(transactions);
 });
 
@@ -90,6 +99,12 @@ server.get(
 //  TODO blog-app-api view
 // `/user/:twitter-handle`
 // `/user/:twitter-handle/:post-slug`
+
+// /blog-api/feed?page[size]=20&page[after]=:tx_id
+// /blog-api/post/:post_id
+// /blog-api/user/:wallet_address?page[size]=20&page[after]=:tx_id
+// /blog-api/user/:wallet_address/following
+// /blog-api/user/:wallet_address/followers
 
 const port = 4000;
 

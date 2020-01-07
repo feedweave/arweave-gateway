@@ -35,10 +35,18 @@ export async function getTransactionsByAppName(appName) {
   return processTransactionRows(result.rows);
 }
 
-export async function getTransactionsByWallet(wallet) {
+export async function getTransactionsByWallet(wallet, options) {
+  const { appName } = options;
+  let text = `SELECT ${transactionColumns} FROM transactions WHERE "ownerAddress" = $1`;
+  const values = [wallet];
+
+  if (appName) {
+    text = text + ` AND "appName" = $2`;
+    values.push(appName);
+  }
   const result = await pool.query({
-    text: `SELECT ${transactionColumns} FROM transactions WHERE "ownerAddress" = $1`,
-    values: [wallet]
+    text,
+    values
   });
   return result.rows;
 }
@@ -51,19 +59,13 @@ export async function getTransactionsByWalletAndApp(wallet, appName) {
   return result.rows;
 }
 
-export async function getTransactionContent(transactionId) {
+export async function getTransactionWithContent(transactionId) {
   const result = await pool.query({
-    text: `SELECT "rawData"->'data' as content FROM transactions WHERE "id" = $1`,
+    text: `SELECT ${transactionColumns} FROM transactions WHERE "id" = $1`,
     values: [transactionId]
   });
 
-  const row = result.rows[0];
-
-  if (row) {
-    return base64Decode(row.content);
-  } else {
-    return undefined;
-  }
+  return result.rows[0];
 }
 
 export async function getAppNames() {
