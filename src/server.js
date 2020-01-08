@@ -7,8 +7,10 @@ import request from "request";
 import express from "express";
 const server = express();
 
+import cors from "cors";
+
 import {
-  getTransactionsByAppName,
+  getTransactionsByOptions,
   getTransactionsByWallet,
   getTransactionsByWalletAndApp,
   getTransactionWithContent,
@@ -28,7 +30,7 @@ server.use(express.json());
 
 const apiUrl = "https://arweave.net";
 
-server.post("/tx", async function(req, res) {
+server.post("/tx", cors(), async function(req, res) {
   const tx = req.body;
   const postRes = await fetch(`${apiUrl}/tx`, {
     method: "POST",
@@ -45,12 +47,16 @@ server.post("/tx", async function(req, res) {
       await callDeployWebhook();
       res.sendStatus(201);
     } catch (error) {
+      console.log(error);
       res.sendStatus(500);
     }
   }
 });
 
-server.use(["/tx", "/tx_anchor", "/price", "/wallet"], function(req, res) {
+server.use(["/tx", "/tx_anchor", "/price", "/wallet"], cors(), function(
+  req,
+  res
+) {
   var url = apiUrl + req.originalUrl;
   req.pipe(request({ qs: req.query, uri: url, json: true })).pipe(res);
 });
@@ -62,9 +68,15 @@ server.get("/app-names", async (req, res) => {
 
 server.get("/transactions", async (req, res) => {
   const appName = req.query["app-name"];
+  const walletId = req.query["wallet-id"];
+
   const page = req.query.page;
 
-  const transactions = await getTransactionsByAppName(appName, page);
+  const transactions = await getTransactionsByOptions({
+    appName,
+    walletId,
+    page
+  });
   res.json(transactions);
 });
 
