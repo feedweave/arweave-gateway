@@ -25,16 +25,18 @@ export async function getExistingTxIds() {
   return result.rows.map(({ id }) => id);
 }
 
-const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", "rawData"->'data' as content, "rawData"->'reward' as fee`;
+const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", transactions."rawData"->'data' as content, transactions."rawData"->'reward' as fee`;
 
 export async function getTransactionsByOptions({ appName, walletId, page }) {
-  let text = `SELECT ${transactionColumns} FROM transactions WHERE "appName" = $1`;
+  let whereClause = `"appName" = $1`;
   const values = [appName];
 
   if (walletId) {
-    text = text + ` AND "ownerAddress" = $2`;
+    whereClause = whereClause + ` AND "ownerAddress" = $2`;
     values.push(walletId);
   }
+
+  let text = `SELECT ${transactionColumns} FROM transactions INNER JOIN blocks on transactions."blockHash"=blocks.hash WHERE ${whereClause} ORDER BY height DESC`;
 
   const result = await pool.query({
     text,
