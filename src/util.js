@@ -34,6 +34,11 @@ export const base64Decode = string => {
   return Buffer.from(string, "base64").toString("utf-8");
 };
 
+export const base64Encode = string => {
+  // eslint-disable-next-line no-undef
+  return Buffer.from(string, "utf-8").toString("base64");
+};
+
 export const decodeTags = tags => {
   return tags.map(({ name, value }) => {
     return {

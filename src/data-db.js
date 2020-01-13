@@ -1,5 +1,12 @@
 import pg from "pg";
-import { decodeTags, ownerToAddress, base64Decode } from "./util.js";
+import groupBy from "lodash/groupBy";
+import compact from "lodash/compact";
+import {
+  decodeTags,
+  ownerToAddress,
+  base64Decode,
+  base64Encode
+} from "./util.js";
 const { Pool } = pg;
 
 const pool = new Pool();
@@ -21,22 +28,35 @@ export async function getExistingBlockHeight() {
 }
 
 export async function getExistingTxIds() {
-  const result = await pool.query("SELECT id FROM transactions");
+  const result = await pool.query(
+    `SELECT id FROM transactions WHERE "blockHash" is NOT NULL`
+  );
   return result.rows.map(({ id }) => id);
 }
 
 const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", transactions."rawData"->'data' as content, transactions."rawData"->'reward' as fee`;
 
-export async function getTransactionsByOptions({ appName, walletId, page }) {
+export async function getTransactionsByOptions({
+  appName,
+  walletId,
+  userFeed,
+  page
+}) {
   let whereClause = `"appName" = $1`;
   const values = [appName];
 
   if (walletId) {
     whereClause = whereClause + ` AND "ownerAddress" = $2`;
     values.push(walletId);
+  } else {
+    if (userFeed) {
+      whereClause = whereClause + `AND "ownerAddress" = ANY ($2)`;
+      const userStats = await getUserStats({ ownerAddress: userFeed });
+      values.push(userStats.followingIds);
+    }
   }
 
-  let text = `SELECT ${transactionColumns} FROM transactions INNER JOIN blocks on transactions."blockHash"=blocks.hash WHERE ${whereClause} ORDER BY height DESC`;
+  let text = `SELECT ${transactionColumns}, blocks."rawData"->'timestamp' as timestamp FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE ${whereClause} ORDER BY height DESC`;
 
   const result = await pool.query({
     text,
@@ -71,7 +91,7 @@ export async function getTransactionsByWalletAndApp(wallet, appName) {
 
 export async function getTransactionWithContent(transactionId) {
   const result = await pool.query({
-    text: `SELECT ${transactionColumns} FROM transactions WHERE "id" = $1`,
+    text: `SELECT ${transactionColumns}, blocks."rawData"->'timestamp' as timestamp FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "id" = $1 `,
     values: [transactionId]
   });
 
@@ -174,4 +194,89 @@ export async function saveFetchError(url, error) {
   };
   const result = await pool.query(query);
   return result.rows;
+}
+
+export async function getUser(address) {
+  const result = await pool.query({
+    text: `SELECT "ownerAddress" FROM transactions WHERE "ownerAddress" = $1 LIMIT 1`,
+    values: [address]
+  });
+
+  return result.rows[0];
+}
+
+async function getUserFollowing(address) {
+  const encodedGraphResult = await pool.query({
+    text: `SELECT transactions."rawData"->'data' as "followAddress", tags, height FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "ownerAddress" = $1 AND "appName"='social-graph' ORDER BY height DESC`,
+    values: [address]
+  });
+
+  const graphResult = encodedGraphResult.rows.map(row => {
+    return {
+      ...row,
+      followAddress: base64Decode(row.followAddress)
+    };
+  });
+
+  const graphByFollowAddress = groupBy(graphResult, "followAddress");
+  const followingIds = compact(
+    Object.keys(graphByFollowAddress).map(address => {
+      const row = graphByFollowAddress[address][0];
+      const found = row.tags.find(
+        tag => tag.name === "Action" && tag.value === "follow"
+      );
+      if (found) {
+        return address;
+      }
+    })
+  );
+
+  return followingIds;
+}
+
+async function getUserFollowers(address) {
+  const base64Address = base64Encode(address).replace(/=/g, "");
+  const transactions = await pool.query({
+    text: `SELECT id, height, tags, "ownerAddress" FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "appName"='social-graph' AND transactions."rawData"->>'data'= $1 ORDER BY height DESC`,
+    values: [base64Address]
+  });
+
+  const txByOwnerAddress = groupBy(transactions.rows, "ownerAddress");
+  const followerIds = compact(
+    Object.keys(txByOwnerAddress).map(address => {
+      const row = txByOwnerAddress[address][0];
+      const found = row.tags.find(
+        tag => tag.name === "Action" && tag.value === "follow"
+      );
+      if (found) {
+        return address;
+      }
+    })
+  );
+
+  return followerIds;
+}
+
+async function getUserPosts(address) {
+  const postQueryResult = await pool.query({
+    text: `SELECT id FROM transactions WHERE "ownerAddress" = $1 AND "appName"='arweave-blog-0.0.1'`,
+    values: [address]
+  });
+
+  return postQueryResult.rows;
+}
+
+export async function getUserStats({ ownerAddress: address }) {
+  const userPosts = await getUserPosts(address);
+  const followingIds = await getUserFollowing(address);
+  const followerIds = await getUserFollowers(address);
+
+  return {
+    id: address,
+    postCount: userPosts.length,
+    followerCount: followerIds.length,
+    followingCount: followingIds.length,
+    followerIds,
+    followingIds
+  };
 }

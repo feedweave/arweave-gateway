@@ -11,11 +11,11 @@ import cors from "cors";
 
 import {
   getTransactionsByOptions,
-  getTransactionsByWallet,
-  getTransactionsByWalletAndApp,
   getTransactionWithContent,
   getAppNames,
-  saveTransaction
+  saveTransaction,
+  getUser,
+  getUserStats
 } from "./data-db.js";
 
 import { callDeployWebhook } from "./util.js";
@@ -50,6 +50,8 @@ server.post("/tx", cors(), async function(req, res) {
       console.log(error);
       res.sendStatus(500);
     }
+  } else {
+    res.sendStatus(postRes.statusText);
   }
 });
 
@@ -69,12 +71,14 @@ server.get("/app-names", async (req, res) => {
 server.get("/transactions", async (req, res) => {
   const appName = req.query["app-name"];
   const walletId = req.query["wallet-id"];
+  const userFeed = req.query["user-feed"];
 
   const page = req.query.page;
 
   const transactions = await getTransactionsByOptions({
     appName,
     walletId,
+    userFeed,
     page
   });
   res.json(transactions);
@@ -86,27 +90,21 @@ server.get("/transaction/:transactionId", async (req, res) => {
   res.send(transaction);
 });
 
-server.get("/user/:address/transactions", async (req, res) => {
-  const address = req.params.address;
+server.get("/arweave-social/user/:address", async (req, res) => {
+  const { address } = req.params;
 
-  const appName = req.query["app-name"];
-  const page = req.query.page;
-
-  const transactions = await getTransactionsByWallet(address, {
-    appName,
-    page
-  });
-  res.json(transactions);
-});
-
-server.get(
-  "/user/:address/app-name/:appName/transactions",
-  async (req, res) => {
-    const { address, appName } = req.params;
-    const transactions = await getTransactionsByWalletAndApp(address, appName);
-    res.json(transactions);
+  try {
+    const user = await getUser(address);
+    if (!user) {
+      res.sendStatus(404);
+    }
+    const userStats = await getUserStats(user);
+    res.json(userStats);
+  } catch (e) {
+    console.log(e);
+    res.sendStatus(500);
   }
-);
+});
 
 //  TODO blog-app-api view
 // `/user/:twitter-handle`
