@@ -16,6 +16,13 @@ function processTransactionRows(rows) {
     if (row.content) {
       row.content = base64Decode(row.content);
     }
+
+    if (!row.timestamp) {
+      row.timestamp = parseInt(
+        (new Date(row.createdAt).getTime() / 1000).toFixed(0)
+      );
+    }
+    delete row.createdAt;
     return row;
   });
 }
@@ -34,13 +41,12 @@ export async function getExistingTxIds() {
   return result.rows.map(({ id }) => id);
 }
 
-const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", transactions."rawData"->'data' as content, transactions."rawData"->'reward' as fee`;
+const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", transactions."rawData"->'data' as content, transactions."rawData"->'reward' as fee, transactions."createdAt"`;
 
 export async function getTransactionsByOptions({
   appName,
   walletId,
-  userFeed,
-  page
+  userFeed
 }) {
   let whereClause = `"appName" = $1`;
   const values = [appName];
@@ -56,7 +62,7 @@ export async function getTransactionsByOptions({
     }
   }
 
-  let text = `SELECT ${transactionColumns}, blocks."rawData"->'timestamp' as timestamp FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE ${whereClause} ORDER BY height DESC`;
+  let text = `SELECT ${transactionColumns}, blocks."rawData"->'timestamp' as timestamp FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE ${whereClause} ORDER BY height DESC, transactions."createdAt" DESC`;
 
   const result = await pool.query({
     text,
@@ -207,7 +213,7 @@ export async function getUser(address) {
 
 async function getUserFollowing(address) {
   const encodedGraphResult = await pool.query({
-    text: `SELECT transactions."rawData"->'data' as "followAddress", tags, height FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "ownerAddress" = $1 AND "appName"='social-graph' ORDER BY height DESC`,
+    text: `SELECT transactions."rawData"->'data' as "followAddress", tags, height FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "ownerAddress" = $1 AND "appName"='social-graph' ORDER BY height DESC, transactions."createdAt" DESC`,
     values: [address]
   });
 
@@ -237,7 +243,7 @@ async function getUserFollowing(address) {
 async function getUserFollowers(address) {
   const base64Address = base64Encode(address).replace(/=/g, "");
   const transactions = await pool.query({
-    text: `SELECT id, height, tags, "ownerAddress" FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "appName"='social-graph' AND transactions."rawData"->>'data'= $1 ORDER BY height DESC`,
+    text: `SELECT id, height, tags, "ownerAddress" FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "appName"='social-graph' AND transactions."rawData"->>'data'= $1 ORDER BY height DESC, transactions."createdAt" DESC`,
     values: [base64Address]
   });
 
