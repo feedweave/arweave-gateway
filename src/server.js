@@ -96,7 +96,13 @@ server.get("/arweave-social/user/:address", async (req, res) => {
   try {
     const user = await getUser(address);
     if (!user) {
-      res.sendStatus(404);
+      res.json({
+        id: address,
+        postCount: 0,
+        followerCount: 0,
+        follwerIds: [],
+        followingIds: []
+      });
     }
     const userStats = await getUserStats(user);
     res.json(userStats);
