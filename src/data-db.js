@@ -1,6 +1,7 @@
 import pg from "pg";
 import groupBy from "lodash/groupBy";
 import compact from "lodash/compact";
+import base64url from "base64url";
 import {
   decodeTags,
   ownerToAddress,
@@ -41,7 +42,7 @@ export async function getExistingTxIds() {
   return result.rows.map(({ id }) => id);
 }
 
-const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", transactions."rawData"->'data' as content, transactions."rawData"->'reward' as fee, transactions."createdAt"`;
+const transactionColumns = `"id", "blockHash", "ownerAddress", "appName", "tags", transactions."rawData"->>'data' as content, transactions."rawData"->'reward' as fee, transactions."createdAt"`;
 
 export async function getTransactionsByOptions({
   appName,
@@ -272,17 +273,37 @@ async function getUserPosts(address) {
   return postQueryResult.rows;
 }
 
+async function getUserArweaveId(address) {
+  const result = await pool.query({
+    text: `SELECT "rawData"->'data' as name FROM transactions WHERE "appName"='arweave-id' AND tags @> '[{"name": "Type", "value": "name"}]' AND "ownerAddress"=$1`,
+    values: [address]
+  });
+
+  const row = result.rows[0];
+
+  return row && base64Decode(row.name);
+}
+
 export async function getUserStats({ ownerAddress: address }) {
   const userPosts = await getUserPosts(address);
   const followingIds = await getUserFollowing(address);
   const followerIds = await getUserFollowers(address);
+  const arweaveId = await getUserArweaveId(address);
 
   return {
     id: address,
+    arweaveId,
     postCount: userPosts.length,
-    followerCount: followerIds.length,
-    followingCount: followingIds.length,
     followerIds,
     followingIds
   };
+}
+
+export async function getUserByArweaveID(arweaveId) {
+  const result = await pool.query({
+    text: `SELECT "ownerAddress" FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE transactions."rawData"->>'data' = $1 ORDER BY height, transactions."createdAt" LIMIT 1`,
+    values: [base64url(arweaveId)]
+  });
+
+  return result.rows[0];
 }

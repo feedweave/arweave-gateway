@@ -9,13 +9,15 @@ const server = express();
 
 import cors from "cors";
 
+import uniq from "lodash/uniq";
+
 import {
   getTransactionsByOptions,
   getTransactionWithContent,
   getAppNames,
   saveTransaction,
-  getUser,
-  getUserStats
+  getUserStats,
+  getUserByArweaveID
 } from "./data-db.js";
 
 import { callDeployWebhook } from "./util.js";
@@ -81,34 +83,51 @@ server.get("/transactions", async (req, res) => {
     userFeed,
     page
   });
-  res.json(transactions);
+  const ownerAddresses = uniq(transactions.map(tx => tx.ownerAddress));
+  const usersPromises = ownerAddresses.map(addr =>
+    getUserStats({ ownerAddress: addr })
+  );
+  const users = await Promise.all(usersPromises);
+
+  res.json({ transactions, users });
 });
 
 server.get("/transaction/:transactionId", async (req, res) => {
   const { transactionId } = req.params;
   const transaction = await getTransactionWithContent(transactionId);
-  res.send(transaction);
+  if (transaction) {
+    const user = await getUserStats({ ownerAddress: transaction.ownerAddress });
+    res.send({ transaction, user });
+  } else {
+    res.sendStatus(404);
+  }
 });
 
 server.get("/arweave-social/user/:address", async (req, res) => {
   const { address } = req.params;
 
   try {
-    const user = await getUser(address);
-    if (!user) {
-      res.json({
-        id: address,
-        postCount: 0,
-        followerCount: 0,
-        follwerIds: [],
-        followingIds: []
-      });
-    }
-    const userStats = await getUserStats(user);
-    res.json(userStats);
+    const userStats = await getUserStats({ ownerAddress: address });
+    const relatedUserIds = [userStats.followerIds, ...userStats.followingIds];
+    const relatedUsers = await Promise.all(
+      relatedUserIds.map(id => getUserStats({ ownerAddress: id }))
+    );
+    res.json({ user: userStats, relatedUsers });
   } catch (e) {
     console.log(e);
     res.sendStatus(500);
+  }
+});
+
+server.get("/arweave-social/check-arweave-id/:name", async (req, res) => {
+  const { name } = req.params;
+
+  const user = await getUserByArweaveID(name);
+
+  if (user) {
+    res.json(user);
+  } else {
+    res.sendStatus(404);
   }
 });
 
