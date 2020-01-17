@@ -21,12 +21,12 @@ const randomDelayBetween = (minSeconds, maxSeconds) => {
 };
 
 export async function runner(options) {
-  let existingBlockHeight = await getExistingBlockHeight();
-  log(`existingBlockHeight: ${existingBlockHeight}`);
-  const existingTxIds = await getExistingTxIds();
-
   while (!isShuttingDown) {
     try {
+      const existingBlockHeight = await getExistingBlockHeight();
+      log(`existingBlockHeight: ${existingBlockHeight}`);
+      const existingTxIds = await getExistingTxIds();
+
       const syncResult = await syncIteration(
         existingBlockHeight,
         existingTxIds,
@@ -50,11 +50,6 @@ export async function runner(options) {
         log(`calling deploy webhook`);
         await callDeployWebhook();
       }
-
-      const newBlockHeight = savedBlocks.sort((a, b) => b.height - a.height);
-      existingBlockHeight = newBlockHeight;
-
-      existingTxIds.push(...savedTransactions.map(({ id }) => id));
     } catch (error) {
       log(`runner error: ${error}`);
     }
