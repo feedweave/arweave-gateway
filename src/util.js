@@ -121,14 +121,15 @@ function arqlAppNameEqualsQuery(appName) {
 }
 
 export function generateArqlQueryForAppNames(appNames) {
-  if (appNames.length === 1) {
-    return arqlAppNameEqualsQuery(appNames[0]);
+  const appNamesCopy = appNames.slice();
+  if (appNamesCopy.length === 1) {
+    return arqlAppNameEqualsQuery(appNamesCopy[0]);
   } else {
     const query = {
       op: "or"
     };
-    query.expr1 = arqlAppNameEqualsQuery(appNames.pop());
-    query.expr2 = generateArqlQueryForAppNames(appNames);
+    query.expr1 = arqlAppNameEqualsQuery(appNamesCopy.pop());
+    query.expr2 = generateArqlQueryForAppNames(appNamesCopy);
     return query;
   }
 }
