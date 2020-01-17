@@ -284,15 +284,28 @@ async function getUserArweaveId(address) {
   return row && base64Decode(row.name);
 }
 
+async function getUserTwitterId(address) {
+  const result = await pool.query({
+    text: `SELECT "rawData"->'data' as handle FROM transactions WHERE "appName"='identity-link' AND tags @> '[{"name": "Provider", "value": "twitter"}]' AND "ownerAddress"=$1`,
+    values: [address]
+  });
+
+  const row = result.rows[0];
+
+  return row && base64Decode(row.handle);
+}
+
 export async function getUserStats({ ownerAddress: address }) {
   const userPosts = await getUserPosts(address);
   const followingIds = await getUserFollowing(address);
   const followerIds = await getUserFollowers(address);
   const arweaveId = await getUserArweaveId(address);
+  const twitterId = await getUserTwitterId(address);
 
   return {
     id: address,
     arweaveId,
+    twitterId,
     postCount: userPosts.length,
     followerIds,
     followingIds
