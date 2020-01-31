@@ -266,7 +266,7 @@ async function getUserFollowers(address) {
 
 async function getUserPosts(address) {
   const postQueryResult = await pool.query({
-    text: `SELECT id FROM transactions WHERE "ownerAddress" = $1 AND "appName"='arweave-blog-0.0.1'`,
+    text: `SELECT id FROM transactions WHERE "ownerAddress" = $1 AND "appName"='feedweave'`,
     values: [address]
   });
 
