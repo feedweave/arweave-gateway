@@ -108,7 +108,10 @@ server.get("/arweave-social/user/:address", async (req, res) => {
 
   try {
     const userStats = await getUserStats({ ownerAddress: address });
-    const relatedUserIds = [userStats.followerIds, ...userStats.followingIds];
+    const relatedUserIds = [
+      ...userStats.followerIds,
+      ...userStats.followingIds
+    ];
     const relatedUsers = await Promise.all(
       relatedUserIds.map(id => getUserStats({ ownerAddress: id }))
     );
