@@ -274,14 +274,25 @@ async function getUserPosts(address) {
 }
 
 async function getUserArweaveId(address) {
-  const result = await pool.query({
+  const idForAddress = await pool.query({
     text: `SELECT "rawData"->'data' as name FROM transactions WHERE "appName"='arweave-id' AND tags @> '[{"name": "Type", "value": "name"}]' AND "ownerAddress"=$1`,
     values: [address]
   });
 
-  const row = result.rows[0];
+  const row = idForAddress.rows[0];
 
-  return row && base64Decode(row.name);
+  if (row) {
+    const collisionIds = await pool.query({
+      text: `SELECT transactions."rawData"->'data' as name, "ownerAddress" FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "appName"='arweave-id' AND tags @> '[{"name": "Type", "value": "name"}]' AND transactions."rawData"->>'data'=$1 ORDER BY height`,
+      values: [row.name]
+    });
+
+    const firstRow = collisionIds.rows[0];
+
+    if (firstRow.ownerAddress === address) {
+      return base64Decode(firstRow.name);
+    }
+  }
 }
 
 async function getUserTwitterId(address) {
