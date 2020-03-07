@@ -70,7 +70,7 @@ server.get("/app-names", async (req, res) => {
   res.json(appNames);
 });
 
-server.get("/transactions", async (req, res) => {
+server.get("/transactions", cors(), async (req, res) => {
   const appName = req.query["app-name"];
   const walletId = req.query["wallet-id"];
   const userFeed = req.query["user-feed"];
@@ -92,7 +92,7 @@ server.get("/transactions", async (req, res) => {
   res.json({ transactions, users });
 });
 
-server.get("/transaction/:transactionId", async (req, res) => {
+server.get("/transaction/:transactionId", cors(), async (req, res) => {
   const { transactionId } = req.params;
   const transaction = await getTransactionWithContent(transactionId);
   if (transaction) {
@@ -103,7 +103,7 @@ server.get("/transaction/:transactionId", async (req, res) => {
   }
 });
 
-server.get("/arweave-social/user/:address", async (req, res) => {
+server.get("/arweave-social/user/:address", cors(), async (req, res) => {
   const { address } = req.params;
 
   try {
@@ -122,17 +122,21 @@ server.get("/arweave-social/user/:address", async (req, res) => {
   }
 });
 
-server.get("/arweave-social/check-arweave-id/:name", async (req, res) => {
-  const { name } = req.params;
+server.get(
+  "/arweave-social/check-arweave-id/:name",
+  cors(),
+  async (req, res) => {
+    const { name } = req.params;
 
-  const user = await getUserByArweaveID(name);
+    const user = await getUserByArweaveID(name);
 
-  if (user) {
-    res.json(user);
-  } else {
-    res.sendStatus(404);
+    if (user) {
+      res.json(user);
+    } else {
+      res.sendStatus(404);
+    }
   }
-});
+);
 
 //  TODO blog-app-api view
 // `/user/:twitter-handle`
