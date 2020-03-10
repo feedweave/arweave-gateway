@@ -57,10 +57,7 @@ server.post("/tx", cors(), async function(req, res) {
   }
 });
 
-server.use(["/tx", "/tx_anchor", "/price", "/wallet"], cors(), function(
-  req,
-  res
-) {
+server.use(["/tx", "/tx_anchor", "/price", "/wallet"], function(req, res) {
   var url = apiUrl + req.originalUrl;
   req.pipe(request({ qs: req.query, uri: url, json: true })).pipe(res);
 });
