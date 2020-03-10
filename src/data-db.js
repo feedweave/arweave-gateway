@@ -325,7 +325,7 @@ export async function getUserStats({ ownerAddress: address }) {
 
 export async function getUserByArweaveID(arweaveId) {
   const result = await pool.query({
-    text: `SELECT "ownerAddress" FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE transactions."rawData"->>'data' = $1 ORDER BY height, transactions."createdAt" LIMIT 1`,
+    text: `SELECT "ownerAddress" FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "appName"='arweave-id' AND tags @> '[{"name": "Type", "value": "name"}]' AND transactions."rawData"->>'data' = $1 ORDER BY height, transactions."createdAt" LIMIT 1`,
     values: [base64url(arweaveId)]
   });
 
