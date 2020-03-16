@@ -331,3 +331,13 @@ export async function getUserByArweaveID(arweaveId) {
 
   return result.rows[0];
 }
+
+export async function getTxComments(txId) {
+  const object = `[{"name": "Transaction-ID", "value": "${txId}"}]`;
+  const result = await pool.query({
+    text: `SELECT "rawData"->'data' as content, "ownerAddress", id, "createdAt" FROM transactions WHERE "appName"='transaction-comment' AND tags @> $1`,
+    values: [object]
+  });
+
+  return processTransactionRows(result.rows);
+}

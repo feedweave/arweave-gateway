@@ -17,7 +17,8 @@ import {
   getAppNames,
   saveTransaction,
   getUserStats,
-  getUserByArweaveID
+  getUserByArweaveID,
+  getTxComments
 } from "./data-db.js";
 
 import { callDeployWebhook } from "./util.js";
@@ -95,6 +96,21 @@ server.get("/transaction/:transactionId", cors(), async (req, res) => {
   if (transaction) {
     const user = await getUserStats({ ownerAddress: transaction.ownerAddress });
     res.send({ transaction, user });
+  } else {
+    res.sendStatus(404);
+  }
+});
+
+server.get("/transaction/:transactionId/comments", cors(), async (req, res) => {
+  const { transactionId } = req.params;
+  const transaction = await getTransactionWithContent(transactionId);
+  if (transaction) {
+    const comments = await getTxComments(transaction.id);
+    const userIds = uniq(comments.map(c => c.ownerAddress));
+    const users = await Promise.all(
+      userIds.map(id => getUserStats({ ownerAddress: id }))
+    );
+    res.send({ comments, users });
   } else {
     res.sendStatus(404);
   }
