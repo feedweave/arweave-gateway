@@ -33,7 +33,7 @@ server.use(express.json());
 
 const apiUrl = "https://arweave.net";
 
-server.post("/tx", cors(), async function(req, res) {
+server.post("/tx", async function(req, res) {
   const tx = req.body;
   const postRes = await fetch(`${apiUrl}/tx`, {
     method: "POST",
