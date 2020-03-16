@@ -335,7 +335,7 @@ export async function getUserByArweaveID(arweaveId) {
 export async function getTxComments(txId) {
   const object = `[{"name": "Transaction-ID", "value": "${txId}"}]`;
   const result = await pool.query({
-    text: `SELECT "rawData"->'data' as content, "ownerAddress", id, "createdAt" FROM transactions WHERE "appName"='transaction-comment' AND tags @> $1`,
+    text: `SELECT transactions."rawData"->'data' as content, "ownerAddress", id, transactions."createdAt" FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "appName"='transaction-comment' AND tags @> $1 ORDER BY height DESC, transactions."createdAt" DESC`,
     values: [object]
   });
 
