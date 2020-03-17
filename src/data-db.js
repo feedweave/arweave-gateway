@@ -275,7 +275,7 @@ async function getUserPosts(address) {
 
 async function getUserArweaveId(address) {
   const idForAddress = await pool.query({
-    text: `SELECT "rawData"->'data' as name FROM transactions WHERE "appName"='arweave-id' AND tags @> '[{"name": "Type", "value": "name"}]' AND "ownerAddress"=$1`,
+    text: `SELECT transactions."rawData"->'data' as name FROM transactions LEFT JOIN blocks on transactions."blockHash"=blocks.hash WHERE "appName"='arweave-id' AND tags @> '[{"name": "Type", "value": "name"}]' AND "ownerAddress"=$1 ORDER BY height DESC`,
     values: [address]
   });
 
