@@ -1,6 +1,7 @@
 import pg from "pg";
 import groupBy from "lodash/groupBy";
 import compact from "lodash/compact";
+import uniq from "lodash/uniq";
 import base64url from "base64url";
 import {
   decodeTags,
@@ -340,4 +341,35 @@ export async function getTxComments(txId) {
   });
 
   return processTransactionRows(result.rows);
+}
+
+export async function getFeed(cursor) {
+  const whereClause = `"appName" = 'FEEDweave'`;
+  const values = [];
+
+  let andClause = ``;
+
+  if (cursor) {
+    andClause = `AND "seqID" <= $1`;
+    values.push(cursor);
+  }
+
+  let text = `SELECT ${transactionColumns}, "seqID" FROM transactions WHERE ${whereClause} ${andClause} ORDER BY "seqID" DESC LIMIT 16`;
+
+  const result = await pool.query({ text, values });
+
+  const transactions = processTransactionRows(result.rows);
+  let cursorTx = {};
+
+  if (transactions.length === 16) {
+    cursorTx = transactions.pop();
+  }
+
+  const ownerAddresses = uniq(transactions.map(tx => tx.ownerAddress));
+  const usersPromises = ownerAddresses.map(addr =>
+    getUserStats({ ownerAddress: addr })
+  );
+  const users = await Promise.all(usersPromises);
+
+  return { transactions, users, nextCursor: cursorTx.seqID };
 }

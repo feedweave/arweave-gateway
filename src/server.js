@@ -18,7 +18,8 @@ import {
   saveTransaction,
   getUserStats,
   getUserByArweaveID,
-  getTxComments
+  getTxComments,
+  getFeed
 } from "./data-db.js";
 
 import { callDeployWebhook } from "./util.js";
@@ -66,6 +67,13 @@ server.use(["/tx", "/tx_anchor", "/price", "/wallet"], function(req, res) {
 server.get("/app-names", async (req, res) => {
   const appNames = await getAppNames();
   res.json(appNames);
+});
+
+server.get("/post-feed", cors(), async (req, res) => {
+  const cursor = req.query["cursor"];
+  const { transactions, users, nextCursor } = await getFeed(cursor);
+
+  res.json({ transactions, users, nextCursor });
 });
 
 server.get("/transactions", cors(), async (req, res) => {
