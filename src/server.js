@@ -18,8 +18,8 @@ import {
   saveTransaction,
   getUserStats,
   getUserByArweaveID,
-  getTxComments,
-  getFeed
+  getTxLikes,
+  getFeed,
 } from "./data-db.js";
 
 import { callDeployWebhook } from "./util.js";
@@ -34,15 +34,15 @@ server.use(express.json());
 
 const apiUrl = "https://arweave.net";
 
-server.post("/tx", async function(req, res) {
+server.post("/tx", cors(), async function (req, res) {
   const tx = req.body;
   const postRes = await fetch(`${apiUrl}/tx`, {
     method: "POST",
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(tx)
+    body: JSON.stringify(tx),
   });
 
   if (postRes.ok) {
@@ -59,7 +59,10 @@ server.post("/tx", async function(req, res) {
   }
 });
 
-server.use(["/tx", "/tx_anchor", "/price", "/wallet"], function(req, res) {
+server.use(["/tx", "/tx_anchor", "/price", "/wallet"], cors(), function (
+  req,
+  res
+) {
   var url = apiUrl + req.originalUrl;
   req.pipe(request({ qs: req.query, uri: url, json: true })).pipe(res);
 });
@@ -71,7 +74,21 @@ server.get("/app-names", async (req, res) => {
 
 server.get("/post-feed", cors(), async (req, res) => {
   const cursor = req.query["cursor"];
-  const { transactions, users, nextCursor } = await getFeed(cursor);
+  const address = req.query["address"];
+  const followedBy = req.query["followed-by"];
+  const { transactions, users, nextCursor } = await getFeed(cursor, {
+    address,
+    followedBy,
+  });
+
+  res.json({ transactions, users, nextCursor });
+});
+
+server.get("/activity-feed", cors(), async (req, res) => {
+  const cursor = req.query["cursor"];
+  const { transactions, users, nextCursor } = await getFeed(cursor, {
+    showActivity: true,
+  });
 
   res.json({ transactions, users, nextCursor });
 });
@@ -87,10 +104,10 @@ server.get("/transactions", cors(), async (req, res) => {
     appName,
     walletId,
     userFeed,
-    page
+    page,
   });
-  const ownerAddresses = uniq(transactions.map(tx => tx.ownerAddress));
-  const usersPromises = ownerAddresses.map(addr =>
+  const ownerAddresses = uniq(transactions.map((tx) => tx.ownerAddress));
+  const usersPromises = ownerAddresses.map((addr) =>
     getUserStats({ ownerAddress: addr })
   );
   const users = await Promise.all(usersPromises);
@@ -111,14 +128,25 @@ server.get("/transaction/:transactionId", cors(), async (req, res) => {
 
 server.get("/transaction/:transactionId/comments", cors(), async (req, res) => {
   const { transactionId } = req.params;
+  const tx = await getTransactionWithContent(transactionId);
+  if (tx) {
+    const { comments, users } = tx;
+    res.send({ comments, users });
+  } else {
+    res.sendStatus(404);
+  }
+});
+
+server.get("/transaction/:transactionId/likes", cors(), async (req, res) => {
+  const { transactionId } = req.params;
   const transaction = await getTransactionWithContent(transactionId);
   if (transaction) {
-    const comments = await getTxComments(transaction.id);
-    const userIds = uniq(comments.map(c => c.ownerAddress));
+    const likes = await getTxLikes(transaction.id);
+    const userIds = uniq(likes.map((c) => c.ownerAddress));
     const users = await Promise.all(
-      userIds.map(id => getUserStats({ ownerAddress: id }))
+      userIds.map((id) => getUserStats({ ownerAddress: id }))
     );
-    res.send({ comments, users });
+    res.send({ likes, users });
   } else {
     res.sendStatus(404);
   }
@@ -131,10 +159,10 @@ server.get("/arweave-social/user/:address", cors(), async (req, res) => {
     const userStats = await getUserStats({ ownerAddress: address });
     const relatedUserIds = uniq([
       ...userStats.followerIds,
-      ...userStats.followingIds
+      ...userStats.followingIds,
     ]);
     const relatedUsers = await Promise.all(
-      relatedUserIds.map(id => getUserStats({ ownerAddress: id }))
+      relatedUserIds.map((id) => getUserStats({ ownerAddress: id }))
     );
     res.json({ user: userStats, relatedUsers });
   } catch (e) {
