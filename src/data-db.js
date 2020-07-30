@@ -109,6 +109,11 @@ export async function getTransactionWithContent(transactionId) {
   });
 
   const processedTx = processTransactionRows(result.rows)[0];
+
+  if (!processedTx) {
+    return null;
+  }
+
   return decorateTransactionWithLikesAndComments(processedTx);
 }
 
@@ -432,6 +437,10 @@ async function getParentUserAndTxId(tx) {
   }
 
   const parentTx = await getTransactionWithContent(parentTxId);
+
+  if (!parentTx) {
+    return {};
+  }
   const parentUser = await getUserStats(parentTx);
   return { parentUser, parentTxId };
 }
